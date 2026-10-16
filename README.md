@@ -17,7 +17,7 @@ Querying searchVIU data through an MCP — sizing or counting report rows, filte
 - `references/scope-and-counting.md` — crawl scope, counting and aggregate widgets (§4–§6).
 - `references/reading-reports.md` — derived columns, report metadata, facet widgets and field semantics (§7–§10).
 - `references/operators-and-extraction.md` — the operator set, the missing operators and bulk extraction (§11–§12).
-- `references/troubleshooting.md` — UI/API disagreements, session loss and the per-project release gate (§14–§15).
+- `references/troubleshooting.md` — UI/API disagreements, session loss, the per-project release gate and the performance-data level behind it (§14–§15).
 - `LICENSE` — CC BY 4.0.
 
 ## Install

@@ -2,7 +2,7 @@
 
 Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors). Section numbers are global across `SKILL.md` and `references/` — the section map in `SKILL.md` says where each § lives.
 
-**Load trigger:** Read when the UI and the API disagree on a number, and on any `Server not initialized` or `This project is not released for MCP access` error — before retrying anything.
+**Load trigger:** Read when the UI and the API disagree on a number, on any `Server not initialized` or `This project is not released for MCP access` error, and when a performance column (clicks, sessions, revenue) returns labels instead of numbers or cannot be filtered — before retrying anything.
 
 ## Contents
 
@@ -68,3 +68,17 @@ hand the user the release URL from `mcpAccessHint` (the gate is an admin
 action inside the platform UI, which nothing in this MCP can perform), and
 resume once they confirm. Do not spend retries, tool-list refreshes or a
 new task on it — none of those touch a setting on the project.
+
+**A release carries a second, finer gate that produces no error at all.**
+The same settings page holds a "Performance data" level — Off, Levels
+(the default) or Exact values — governing clicks, impressions, positions,
+sessions, revenue and conversions, with crawl data unaffected (tool-surface
+table, §2). Under Levels a performance column comes back as a bucket label
+and cannot be filtered, so the symptoms are a column of words where numbers
+were expected, or a filter on that column that selects nothing — both of
+which read as an empty scope or an ignored filter unless the level is
+checked first. When a performance figure looks wrong on a released project,
+ask the project admin which level is set before treating it as a data or
+filter problem; the fix is a settings change on their side, not a different
+query. The exact row and error shapes under Levels are not yet observed —
+record them when first seen.

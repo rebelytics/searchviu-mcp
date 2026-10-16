@@ -1,7 +1,7 @@
 ---
 name: "searchviu-mcp"
 description: "Companion skill for the searchVIU MCP server (list_projects / list_reports / get_report over the searchVIU crawl data warehouse). Load whenever querying searchVIU data through an MCP — sizing or counting report rows, filtering by crawl date, building prefix exclusions, paging past the row cap, or deciding whether a data class is reachable at all. Also load on mentions of totalRows, get_report, searchVIU reports via API, the AI Monitoring global reports, or when a searchVIU report shows different numbers in the UI and through the API. Teaches the real behaviour of the report-wrapper API — the unfiltered-aggregate trap, count units, facet self-exclusion, and the range arithmetic that substitutes for missing operators."
-version: 1.0.0
+version: 1.1.0
 license: CC-BY-4.0
 metadata:
   author: Eoghan Henn and contributors
@@ -73,7 +73,8 @@ entry can be promoted.
 |------|--------|-------|
 | `list_projects` | ✅ | Enumerates projects; IDs feed `list_reports`. At last check each project also carries `mcpEnabled` (boolean) and `mcpAccessHint` — the per-project **release gate** (see Troubleshooting). Read `mcpEnabled` before calling the other two tools on a project; it is the only place the gate is visible short of an error. |
 | `list_reports` | ✅ | Enumerates **project-owned** reports only. Every report it has ever returned carried `isGlobal: false`, and a global report confirmed to exist in a project never appeared in that project's listing. Never read an empty listing as "this project has no reports". Errors with `This project is not released for MCP access` on a project whose `mcpEnabled` is `false`. |
-| `get_report` | ✅ | Returns all widgets of one report. 1,000-row cap per widget via `maxRowsPerWidget`. Accepts filters (see operator set). Every filtered response carries `totalRows` per widget. For a **global** report, `projectId` must be passed alongside `reportId` — it resolves the template's data source to that project. Subject to the same per-project release gate as `list_reports`. |
+| `get_report` | ✅ | Returns all widgets of one report. 1,000-row cap per widget via `maxRowsPerWidget`. Accepts filters (see operator set). Every filtered response carries `totalRows` per widget. For a **global** report, `projectId` must be passed alongside `reportId` — it resolves the template's data source to that project. Subject to the same per-project release gate as `list_reports`, and to the performance-data level below. |
+| Performance-data level (per project, inside the release) | ⬜ | A released project carries a second gate on the project's MCP settings page, **"Performance data"**, with three values: **Off** (performance values withheld), **Levels** (the default: coarse buckets such as none/low/medium/high or top 3/top 10; revenue and conversions only as present/absent; no filtering on these columns; no exports) and **Exact values**. It governs clicks, impressions, positions, sessions and revenue; crawl data is unaffected. The in-app AI assistant has its own identical switch, set separately. Known from the settings page text only — not yet observed in a `get_report` payload, and `list_projects` has not been seen to expose it. The next session that reads a performance column through the MCP records what a Levels-gated value looks like in the row, what a filter on that column returns, and whether `list_projects` reports the level, then promotes this row. |
 
 ## Reference files — load on demand
 
@@ -91,7 +92,7 @@ a shortcut that worked.
 - `references/scope-and-counting.md` (§4–§6) — **read before the first crawl-scoped `get_report` call of a task, and before quoting any count, total or aggregate-widget value — the crawl-date rules, `totalRows` as the COUNT primitive and its units, call serialisation, multi-section reports, and why aggregates recompute inside the filter.**
 - `references/reading-reports.md` (§7–§10) — **read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — and before reading dates off an AI Monitoring row.**
 - `references/operators-and-extraction.md` (§11–§12) — **read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count.**
-- `references/troubleshooting.md` (§14–§15) — **read when the UI and the API disagree on a number, and on any `Server not initialized` or `This project is not released for MCP access` error — before retrying anything.**
+- `references/troubleshooting.md` (§14–§15) — **read when the UI and the API disagree on a number, on any `Server not initialized` or `This project is not released for MCP access` error, and when a performance column (clicks, sessions, revenue) returns labels instead of numbers or cannot be filtered — before retrying anything.**
 
 ## Section map — where each § lives
 
@@ -256,6 +257,17 @@ Before reporting numbers derived through this MCP, check:
 15. **Domain boundary:** for any inlink, orphan or linking-dependence
     figure from a multi-domain project, were same-domain and cross-domain
     sources separated, and is the figure labelled with which one it is?
+16. **Performance-data level:** for any clicks, impressions, positions,
+    sessions, revenue or conversions figure, was the project's MCP
+    "Performance data" level confirmed to be **Exact values**? Under the
+    default **Levels** the value is a bucket label, not a number, and the
+    column cannot be filtered — a filter on it that returns nothing, or a
+    column of words where numbers were expected, is this gate, not an
+    empty scope. The level is set by a project admin per project (and
+    separately for the in-app AI assistant); "released" says you can read
+    the project, not at what resolution. Where the level is not Exact,
+    label the figure as a level, never convert it to a number, and hand
+    the user the settings path rather than a workaround.
 
 A delivery that fails a check gets corrected, not caveated.
 
