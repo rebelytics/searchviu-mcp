@@ -2,7 +2,7 @@
 
 Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors). Section numbers are global across `SKILL.md` and `references/` — the section map in `SKILL.md` says where each § lives.
 
-**Load trigger:** Read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — and before reading dates off an AI Monitoring row.
+**Load trigger:** Read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.
 
 ## Contents
 
@@ -84,6 +84,31 @@ carelessly, this looks like the filter was ignored.
   that list is strong evidence it never occurs.
 
 ## 10. Field semantics — sentinels, the inlink_count family, and extraction keys
+
+**A crawler-recorded value is a claim about what the crawler received, not
+about what the server sends to the clients a fix is for.** Two fields carry
+this in practice. `crawl_http_status` on `http://` URLs: a **307** recorded on
+the http→https hop is a value to live-check with a plain HTTP client before
+it is reported as a site defect — one request per URL, once with a browser
+user agent and once with a search-engine bot user agent, reading the first
+hop's status. The failure shape: a set of legacy `http://` product URLs
+recorded at 307 across consecutive crawls answered 301 live to both
+user agents, so the ticket point "fix the 307s" would have asked a dev team
+to repair a redirect that was already correct; what produces the crawler's
+307 is not established (the crawler's own scheme upgrade is one candidate).
+The wider scope: **any renderer-recorded value** — a JavaScript console
+error, a failed request, a rendered-vs-raw difference — is reproduced once
+in a clean browser that starts from the same empty state (no cookies, no
+storage) before it is reported as a defect or ranked as a lever. The failure
+shape: a report ranked "JavaScript console errors" as the second-largest
+lever on a site, with tens of thousands of pages sharing one first error — a
+CORS preflight failure on a consent-management file — while a fresh browser
+on a first visit passed the preflight and logged no console error. The
+clean-browser condition is the point: a returning visitor's browser often
+never makes the call the crawler makes on every page, so a casual check in
+the user's own browser is not a reproduction either. Report what was
+reproduced, by which client, and treat the remainder as a crawler artefact
+to raise with the platform owner.
 
 **`crawl_depth = 9990` (numeric, in the links source) is the same value as
 `"Not linked internally"` (string, in the URL source), and it means zero

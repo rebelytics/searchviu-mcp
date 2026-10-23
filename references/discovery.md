@@ -91,6 +91,21 @@ live preview. And a nav entry's name can collide with a feature name
 while meaning something else entirely; confirm what a section does before
 treating it as the feature's home.
 
+Two registry entries worth knowing before an image question is declared
+unreachable, as observed at last verification. **`crawl_images` is the
+image-level source for any image or alt-text question** — one row per image
+occurrence with `url_complete`, `image_url`, `alt_text`,
+`alt_attribute_present`, `width`, `height`, `format`, `file_size_bytes`,
+`content_md5`, `phash`, `crawl_id` and `device`. It carries **no
+`crawl_date`**: scope it by joining `crawl_id` to the URL source, never by a
+date filter that the source will silently drop. And a name is not a
+capability: **`image_classifications` is a sustainability-claims image
+screening**, not a photo-versus-graphic classifier, so an "own graphics
+inventory" or "which images are photos" question is not answered there. A
+source remembered from another tool (a dashboard connector's "alt analysis"
+table, say) may not be registered in the platform at all — confirm it in
+the registry before building a report on it.
+
 **3. An invalid filter field *sometimes* makes the validator enumerate the
 schema — and sometimes is dropped in silence.** Read this route's caveat
 first, then the route.

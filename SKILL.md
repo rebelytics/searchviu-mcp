@@ -1,11 +1,11 @@
 ---
-name: "searchviu-mcp"
+name: searchviu-mcp
 description: "Companion skill for the searchVIU MCP server (list_projects / list_reports / get_report over the searchVIU crawl data warehouse). Load whenever querying searchVIU data through an MCP — sizing or counting report rows, filtering by crawl date, building prefix exclusions, paging past the row cap, or deciding whether a data class is reachable at all. Also load on mentions of totalRows, get_report, searchVIU reports via API, the AI Monitoring global reports, or when a searchVIU report shows different numbers in the UI and through the API. Teaches the real behaviour of the report-wrapper API — the unfiltered-aggregate trap, count units, facet self-exclusion, and the range arithmetic that substitutes for missing operators."
-version: 1.1.0
+version: 1.2.0
 license: CC-BY-4.0
 metadata:
   author: Eoghan Henn and contributors
-  source: github.com/rebelytics/searchviu-mcp
+  source: https://github.com/rebelytics/searchviu-mcp
 ---
 
 # searchVIU MCP — Companion Skill
@@ -90,7 +90,7 @@ a shortcut that worked.
 
 - `references/discovery.md` (§3) — **read before concluding that a report, a data class or a field does not exist — an empty `list_reports`, a question about the platform's inputs rather than its report output, or any need to know which fields a data source can be filtered on. Also holds the report ids of the global AI Monitoring reports.**
 - `references/scope-and-counting.md` (§4–§6) — **read before the first crawl-scoped `get_report` call of a task, and before quoting any count, total or aggregate-widget value — the crawl-date rules, `totalRows` as the COUNT primitive and its units, call serialisation, multi-section reports, and why aggregates recompute inside the filter.**
-- `references/reading-reports.md` (§7–§10) — **read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — and before reading dates off an AI Monitoring row.**
+- `references/reading-reports.md` (§7–§10) — **read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.**
 - `references/operators-and-extraction.md` (§11–§12) — **read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count.**
 - `references/troubleshooting.md` (§14–§15) — **read when the UI and the API disagree on a number, on any `Server not initialized` or `This project is not released for MCP access` error, and when a performance column (clicks, sessions, revenue) returns labels instead of numbers or cannot be filtered — before retrying anything.**
 
@@ -268,6 +268,12 @@ Before reporting numbers derived through this MCP, check:
     the project, not at what resolution. Where the level is not Exact,
     label the figure as a level, never convert it to a number, and hand
     the user the settings path rather than a workaround.
+17. **Crawler-recorded defects:** for any status code, console error,
+    failed request or rendered-vs-raw difference about to be reported as a
+    site defect or ranked as a lever, was it reproduced once with the client
+    the fix is for — a plain HTTP client for a status code, a clean browser
+    starting from empty storage for a rendering value — and is the finding
+    labelled with what reproduced and what did not (§10)?
 
 A delivery that fails a check gets corrected, not caveated.
 
@@ -275,7 +281,7 @@ A delivery that fails a check gets corrected, not caveated.
 
 If the user finds the methodology wrong or incomplete, or hits searchVIU MCP
 behaviour this skill doesn't cover, offer to draft an issue for
-github.com/rebelytics/searchviu-mcp, checking the existing issues and pull
+https://github.com/rebelytics/searchviu-mcp, checking the existing issues and pull
 requests for the same problem first; if the problem is the agent not
 following the skill's rules, acknowledge and correct it instead.
 
