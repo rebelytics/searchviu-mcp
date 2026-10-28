@@ -2,7 +2,7 @@
 
 Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors). Section numbers are global across `SKILL.md` and `references/` — the section map in `SKILL.md` says where each § lives.
 
-**Load trigger:** Read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.
+**Load trigger:** Read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, a link-details row, a status, schema-type or GSC-click column, a multi-value cell, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.
 
 ## Contents
 
@@ -110,6 +110,25 @@ the user's own browser is not a reproduction either. Report what was
 reproduced, by which client, and treat the remainder as a crawler artefact
 to raise with the platform owner.
 
+Two crawler-recorded columns carry this in export form:
+
+- **The HTTP-status column mixes crawler-internal states with HTTP codes.**
+  A rendering-service error value marks a page the crawler's JavaScript
+  render step failed on — the page itself served 200, and its row still
+  carries valid search-performance data. Render errors can concentrate on
+  one market or template, so a `status == 200` filter drops live pages in a
+  skewed way and manufactures a per-market gap. Enumerate the column's
+  distinct values before filtering on it; for "is this page live", include
+  the render-error state with 200, or drive the live inventory from the
+  sitemaps and use the export only for metrics. Only 3xx and 4xx codes mean
+  not live.
+- **A null schema-types value is not a page without structured data.** The
+  crawler parses JSON-LD strictly: when one block on a page fails to parse,
+  the whole page is recorded as having no schema, while search engines skip
+  only the broken block and read the rest. Live-verify every null-schema URL
+  block by block before reporting it, or one malformed block is reported as
+  a page-wide absence.
+
 **`crawl_depth = 9990` (numeric, in the links source) is the same value as
 `"Not linked internally"` (string, in the URL source), and it means zero
 *followed* internal inlinks** — a statement about the link graph, not a
@@ -162,6 +181,34 @@ Three riders that make the flag — and every inlink count — usable:
   such as promotions. An independent inventory of what *should* be linked
   is required to make the flag mean anything — the data source usually
   carries one (`xml_sitemap_contains_url`).
+
+**A link-details row is one linking page, not one link.**
+`get_link_graph_url_details` (Discovery route 4) returns one row per linking
+page — the row count equals the distinct count of `url` — with a single
+`anchor`, which is the first link to the target in that page's HTML. A page
+that links the target several times (menu, in-content, footer) appears once,
+under its first anchor, so in-content anchors are not visible through this
+endpoint and a menu or footer anchor reads as the page's only link. Before
+telling a user which link a row represents, check the live page. The
+endpoint's `group` value is the second-level directory, so root-level URLs
+fall under `/ (top level)` and a content cluster served from the root never
+appears as a group of its own. Observed on one project at last
+verification, with the per-page links checked live on two pages.
+
+**Two export columns can carry non-comparable windows.** On the URL
+inventory export, the monthly search-clicks column covers one month while
+the "last year" column is a trailing twelve-month total, not the same month
+a year earlier — so a ratio of the two reads as a uniform steep decline in
+every group. Verify both columns' windows before computing any
+period-over-period delta; a uniform extreme ratio across all groups is the
+signature of a window mismatch, not a trend.
+
+**A multi-value cell is searched by column.** Export cells can hold several
+comma-separated values (iframe sources, CSS classes, link targets per page),
+and a keyword can match in the page-URL column as easily as in the extracted
+value. Confirm which column each match falls in, and when results are
+unexpectedly absent, re-search with a broader or narrower pattern before
+concluding the value does not occur.
 
 **Extraction fields used as join or grouping keys must be probed across
 markets before any cross-market report is built on them.** An extraction

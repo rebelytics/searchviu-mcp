@@ -96,6 +96,14 @@ Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors)
   weekly full crawls). If another scope (daily/live crawls) is needed,
   that is a missing-report situation, not an API limit — create a report
   over that data source (mental-model rule 1).
+- **A project-owned report built on the raw crawl table is pinned to the
+  crawl it was built for and returns nothing for any later crawl** — no
+  error, just an empty scope (observed on one project at last
+  verification). The crawl-selectable reports are the global
+  ones (issues, redirects, canonicals and similar), which `list_reports`
+  does not show (Discovery route 1). Before reading zeros off a
+  project-owned report for a newer crawl, run the global report for the
+  same question against the same `projectId` as the positive control.
 
 ## 5. Counting — totalRows is the aggregation primitive, with units
 

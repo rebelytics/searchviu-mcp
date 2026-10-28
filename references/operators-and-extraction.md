@@ -2,7 +2,7 @@
 
 Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors). Section numbers are global across `SKILL.md` and `references/` — the section map in `SKILL.md` says where each § lives.
 
-**Load trigger:** Read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count.
+**Load trigger:** Read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count. Also holds the crawl-name filter patterns and the pull-to-file-then-jq workflow.
 
 ## Contents
 
@@ -45,6 +45,14 @@ this?".
   boundaries**. Short terms and terms that are substrings of common words
   will produce mid-word false positives that look like tool failure —
   under-specify the pattern, not the tool, is the first hypothesis.
+- **Crawl names need a bounded pattern.** A `like` on a short crawl name
+  also matches every longer name it prefixes (a week number matches the
+  two-digit weeks that start with it). Bound the pattern with the delimiter
+  that follows the name in the stored value — a trailing space on one
+  project's naming convention — and read that convention off the unfiltered
+  facet list first. A `like` on the date part of a name selects a whole
+  month; compare named crawls with `in` over exact values. Confirm the
+  selection on a small `maxRowsPerWidget` probe before the full pull.
 - **Prefix exclusion via lexicographic range complementation.** On a
   sorted string column, the set of values starting with prefix P is the
   half-open interval [P, P′), where P′ is P with its last character
@@ -90,6 +98,17 @@ prefer fewer, larger slices and accept re-slicing a truncated one; verify
 coverage by reconciling each slice's reported total against an
 independently derived grand total, never by assuming the partition was
 exhaustive.
+
+**Pull once, then analyse the file locally.** Once a pull has landed in a
+file, aggregate, group and compare it with `jq` or a script rather than
+re-querying for each question — grouping by crawl, counting URLs per domain
+or segment, summing a metric across crawls, a period-over-period table. Read
+the envelope's shape first (§13 rule 2) and address the widget's rows by
+that path; one example over a rows array:
+
+```bash
+jq '<rows-path> | group_by(.crawl_name) | map({crawl: .[0].crawl_name, urls: length})' pull.json
+```
 
 **Validate every bulk export on the distinct count of its key column, not
 on its row count.** A CSV of tens of thousands of rows can match the

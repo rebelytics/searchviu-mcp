@@ -13,10 +13,10 @@ Querying searchVIU data through an MCP — sizing or counting report rows, filte
 ## What this repo contains
 
 - `SKILL.md` — the mental model, the tool surface, the epistemics for querying an opaque API, the pre-flight checklist, and a section map saying when to load each reference file.
-- `references/discovery.md` — global reports and how to harvest their ids from the application's navigation, the data-sources registry, and the invalid-filter schema probe (§3).
+- `references/discovery.md` — global reports and how to harvest their ids from the application's navigation, the data-sources registry, the invalid-filter schema probe, and the REST passthrough's known endpoints (§3).
 - `references/scope-and-counting.md` — crawl scope, counting and aggregate widgets (§4–§6).
 - `references/reading-reports.md` — derived columns, report metadata, facet widgets and field semantics (§7–§10).
-- `references/operators-and-extraction.md` — the operator set, the missing operators and bulk extraction (§11–§12).
+- `references/operators-and-extraction.md` — the operator set, the missing operators, bulk extraction and the pull-once workflow for local analysis (§11–§12).
 - `references/troubleshooting.md` — UI/API disagreements, session loss, the per-project release gate and the performance-data level behind it (§14–§15).
 - `LICENSE` — CC BY 4.0.
 

@@ -2,11 +2,11 @@
 
 Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors). Section numbers are global across `SKILL.md` and `references/` — the section map in `SKILL.md` says where each § lives.
 
-**Load trigger:** Read before concluding that a report, a data class or a field does not exist — an empty `list_reports`, a question about the platform's inputs rather than its report output, or any need to know which fields a data source can be filtered on. Also holds the report ids of the global AI Monitoring reports.
+**Load trigger:** Read before concluding that a report, a data class or a field does not exist — an empty `list_reports`, a question about the platform's inputs rather than its report output, a widget error from `get_report`, any first call through the REST passthrough, or any need to know which fields a data source can be filtered on. Also holds how to harvest global report ids.
 
 ## Contents
 
-- 3. Discovery — establishing what exists before asserting it doesn't
+- 3. Discovery — establishing what exists before asserting it doesn't (routes 1–4; route 4 is the REST passthrough)
 
 ---
 
@@ -14,7 +14,7 @@ Part of the **searchviu-mcp** skill (CC BY 4.0 — Eoghan Henn and contributors)
 
 A listing tool and a fetch tool are separate channels that can disagree
 about what exists. An empty result only proves the query returned nothing.
-Three routes, in the order they are usually needed.
+Four routes, in the order they are usually needed.
 
 **1. Global reports are invisible to `list_reports`.** Four empty listings
 for one project (bare, plus three `search` terms) were followed by a
@@ -40,7 +40,10 @@ data", which no amount of querying inside one project can show.
 not enumerate global reports, but the UI has to: a project's `/reports` page
 renders a sidebar link list covering both classes, so one pass over its
 `<a href>` values — a single JS call in a browser tool, no clicking through
-reports — surfaces every reportId the API refuses to list. Carry the general
+reports — surfaces every reportId the API refuses to list — each href has the shape
+`/<projectId>/reports/<reportId>`, and the same pass covers the global URL
+inventory and internal-linking reports as well as the AI Monitoring group.
+Carry the general
 form: **when a listing endpoint is known to be blind to a class of objects,
 the application's own navigation is an enumeration channel.**
 
@@ -195,3 +198,36 @@ Three limits of the enumeration, each learned the hard way:
   broken.
 - **The names and labels travelling with it are claims, not behaviour**
   — see the report-metadata rule below.
+
+**4. The REST passthrough reaches what no report exposes.** Beside the
+report layer the server carries a passthrough to the platform's REST API
+(§2). When `get_report` errors on one widget, or a data class seems
+unreachable through any report, run `search_tools` with a few keywords for
+the question before concluding anything — the top hits carry their input
+schemas, so `invoke_api_tool` can follow directly. **A widget-level
+`Widget does not have a data source configured` error is a custom widget
+backed by its own endpoint, not an empty report**: the data exists and the
+endpoint behind the widget answers. Observed on one project at last
+verification: a global link-details report errored on its custom widget,
+`search_tools` on "link details inlinks outlinks url" returned the endpoint
+behind it, and the endpoint answered the question the report could not.
+Known endpoints:
+
+- `get_link_graph_url_details` ✅ — for one URL and a link direction:
+  history across recent crawls, counts grouped by second-level directory,
+  per-linking-page rows with `limit`/`offset`, added/removed rows against a
+  compare crawl, and a click path. Read its rows with the field semantics
+  in §10 before naming a link to a user. Paging past the first page ⬜ —
+  not yet exercised; reconcile the paged row count against the reported
+  total before trusting a full pull.
+- `post_widgets_id_row_details` ⬜ — vendor-described row drill-down for a
+  report widget; not yet exercised.
+
+When an endpoint is used for the first time, report what it returned so its
+entry can be promoted.
+
+**A global report's field set bounds what it can answer.** The global
+internal-linking report has no `url_to` field: a `url_to` filter on it is
+dropped in silence (route 3 caveat), so it cannot name the pages that link
+to a given URL — observed on one project at last verification. Ask that
+question of `get_link_graph_url_details` (route 4) instead.

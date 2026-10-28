@@ -1,7 +1,7 @@
 ---
 name: searchviu-mcp
-description: "Companion skill for the searchVIU MCP server (list_projects / list_reports / get_report over the searchVIU crawl data warehouse). Load whenever querying searchVIU data through an MCP — sizing or counting report rows, filtering by crawl date, building prefix exclusions, paging past the row cap, or deciding whether a data class is reachable at all. Also load on mentions of totalRows, get_report, searchVIU reports via API, the AI Monitoring global reports, or when a searchVIU report shows different numbers in the UI and through the API. Teaches the real behaviour of the report-wrapper API — the unfiltered-aggregate trap, count units, facet self-exclusion, and the range arithmetic that substitutes for missing operators."
-version: 1.2.1
+description: "Companion skill for the searchVIU MCP server (list_projects / list_reports / get_report over the searchVIU crawl data warehouse, plus its REST passthrough search_tools / invoke_api_tool). Load whenever querying searchVIU data through an MCP — sizing or counting report rows, filtering by crawl date, building prefix exclusions, paging past the row cap, or deciding whether a data class is reachable at all. Also load on mentions of totalRows, get_report, invoke_api_tool, a widget error get_report cannot read, searchVIU reports via API, the AI Monitoring global reports, or when a searchVIU report shows different numbers in the UI and through the API. Teaches the real behaviour of the report-wrapper API — the unfiltered-aggregate trap, count units, facet self-exclusion, and the range arithmetic that substitutes for missing operators."
+version: 1.3.0
 license: CC-BY-4.0
 metadata:
   author: Eoghan Henn and contributors
@@ -16,7 +16,9 @@ real reports; nothing is inferred from vendor documentation alone.
 
 **Coverage boundary.** This skill covers **querying the report-wrapper API** —
 `list_projects`, `list_reports`, `get_report`, their filters and operators,
-counting, scoping, paging and bulk extraction. It does **not** cover building
+counting, scoping, paging and bulk extraction — and **reading** through the
+REST passthrough (`search_tools`, `invoke_api_tool`) where a report cannot
+answer. It does **not** cover building
 or configuring reports and widgets in the searchVIU UI, crawl setup and
 scheduling, page-type segmentation config, or searchVIU as a product. The
 boundary runs through prompt tracking rather than around it: its **output** is
@@ -34,10 +36,14 @@ usual answer is a report that doesn't exist yet, not an API limit.
 
 ## 1. Mental model
 
-The MCP exposes exactly three tools: `list_projects`, `list_reports`,
+The report layer is three tools: `list_projects`, `list_reports`,
 `get_report`. There is no query language behind them — `get_report` is a
-**thin wrapper over saved report widgets**. Two consequences drive
-everything else in this skill:
+**thin wrapper over saved report widgets**. Beside it the server carries a
+REST passthrough and item/text editing tools (§2); a count of the server's
+tools is a reading of a moving surface, so before concluding a capability is
+absent, search the live tool surface (`search_tools`), not this skill's
+inventory of it. Two consequences of the report layer drive everything else
+in this skill:
 
 1. **Capability is bounded by the report inventory, not the API — and the
    inventory is user-editable.** If a data class appears unreachable, the
@@ -47,6 +53,8 @@ everything else in this skill:
    without stating whether the report set is fixed or extensible — the
    honest finding is "nothing currently exposes this; here is what to
    add", and the first remedy is a new report, not a vendor escalation.
+   **First search the passthrough** (Discovery route 4): an endpoint may
+   already answer what no report exposes.
    **Two preconditions before invoking this rule** (see Discovery below):
    the listing may be blind to the report class you are looking for, and a
    question about the platform's *inputs* rather than its report output is
@@ -74,6 +82,10 @@ entry can be promoted.
 | `list_projects` | ✅ | Enumerates projects; IDs feed `list_reports`. At last check each project also carries `mcpEnabled` (boolean) and `mcpAccessHint` — the per-project **release gate** (see Troubleshooting). Read `mcpEnabled` before calling the other two tools on a project; it is the only place the gate is visible short of an error. |
 | `list_reports` | ✅ | Enumerates **project-owned** reports only. Every report it has ever returned carried `isGlobal: false`, and a global report confirmed to exist in a project never appeared in that project's listing. Never read an empty listing as "this project has no reports". Errors with `This project is not released for MCP access` on a project whose `mcpEnabled` is `false`. |
 | `get_report` | ✅ | Returns all widgets of one report. 1,000-row cap per widget via `maxRowsPerWidget`. Accepts filters (see operator set). Every filtered response carries `totalRows` per widget. For a **global** report, `projectId` must be passed alongside `reportId` — it resolves the template's data source to that project. Subject to the same per-project release gate as `list_reports`, and to the performance-data level below. |
+| `search_tools` | ✅ | Keyword search over every REST endpoint of the passthrough, returning input schemas with the top hits. **The first move when `get_report` errors on a widget or a data class seems unreachable** (Discovery route 4). A widget-level `Widget does not have a data source configured` error means a custom widget backed by its own endpoint, not an empty report. |
+| `invoke_api_tool` | ✅ | Calls one REST endpoint by name, as the user, within released projects; pass `projectId` explicitly. Per its own description, `read` access allows only GETs and read-like POSTs, and responses default to TOON unless `responseFormat: 'json'` is passed. Known endpoints and their semantics: Discovery route 4 and §10. |
+| `list_api_categories`, `list_tools_in_category`, `get_tool_schema` | ⬜ | Vendor-described browse route and schema fetch for the same endpoints; use when `search_tools` returns nothing useful. |
+| `read_items`, `edit_items`, `read_text`, `edit_text` (with `list_item_targets`, `list_text_targets`) | ⬜ | Vendor-described item-level and line-level read/edit of configuration collections (extraction and segmentation rules) and long text fields (SQL views, prompts, templates). The edit tools change platform configuration, outside this skill's coverage boundary — never call them on a read task. |
 | Performance-data level (per project, inside the release) | ⬜ | A released project carries a second gate on the project's MCP settings page, **"Performance data"**, with three values: **Off** (performance values withheld), **Levels** (the default: coarse buckets such as none/low/medium/high or top 3/top 10; revenue and conversions only as present/absent; no filtering on these columns; no exports) and **Exact values**. It governs clicks, impressions, positions, sessions and revenue; crawl data is unaffected. The in-app AI assistant has its own identical switch, set separately. Known from the settings page text only — not yet observed in a `get_report` payload, and `list_projects` has not been seen to expose it. The next session that reads a performance column through the MCP records what a Levels-gated value looks like in the row, what a filter on that column returns, and whether `list_projects` reports the level, then promotes this row. |
 
 ## Reference files — load on demand
@@ -88,10 +100,10 @@ wrong output this skill exists to prevent. If you notice an episode was
 handled without its reference loaded, treat that as a failure to report, not
 a shortcut that worked.
 
-- `references/discovery.md` (§3) — **read before concluding that a report, a data class or a field does not exist — an empty `list_reports`, a question about the platform's inputs rather than its report output, or any need to know which fields a data source can be filtered on. Also holds the report ids of the global AI Monitoring reports.**
+- `references/discovery.md` (§3) — **read before concluding that a report, a data class or a field does not exist — an empty `list_reports`, a question about the platform's inputs rather than its report output, a widget error from `get_report`, any first call through the REST passthrough, or any need to know which fields a data source can be filtered on. Also holds how to harvest global report ids.**
 - `references/scope-and-counting.md` (§4–§6) — **read before the first crawl-scoped `get_report` call of a task, and before quoting any count, total or aggregate-widget value — the crawl-date rules, `totalRows` as the COUNT primitive and its units, call serialisation, multi-section reports, and why aggregates recompute inside the filter.**
-- `references/reading-reports.md` (§7–§10) — **read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.**
-- `references/operators-and-extraction.md` (§11–§12) — **read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count.**
+- `references/reading-reports.md` (§7–§10) — **read before interpreting a share, ratio or rating column, a report's name or description, a facet list, a sentinel value, an inlink count, a link-details row, a status, schema-type or GSC-click column, a multi-value cell, or an extraction field used as a join or grouping key — before reading dates off an AI Monitoring row — and before a crawler-recorded status code, console error or rendering difference is reported as a site defect.**
+- `references/operators-and-extraction.md` (§11–§12) — **read before designing a filter that needs negation, OR, case sensitivity, prefix exclusion or paging past the 1,000-row cap, and before any bulk pull meant for programmatic processing or any export validated by its row count.** Also holds the crawl-name filter patterns and the pull-to-file-then-jq workflow.
 - `references/troubleshooting.md` (§14–§15) — **read when the UI and the API disagree on a number, on any `Server not initialized` or `This project is not released for MCP access` error, and when a performance column (clicks, sessions, revenue) returns labels instead of numbers or cannot be filtered — before retrying anything.**
 
 ## Section map — where each § lives
