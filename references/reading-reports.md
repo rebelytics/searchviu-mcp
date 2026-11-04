@@ -129,6 +129,16 @@ Two crawler-recorded columns carry this in export form:
   block by block before reporting it, or one malformed block is reported as
   a page-wide absence.
 
+**A field named after a value can be a change log of that value.** The
+`compare_values_*` and `compare_previous_*` fields (for example
+`compare_values_crawl_href_lang_targets` on the URL report and the crawl
+source) hold the literal string `identical` on every row whose value did
+not change since the previous crawl, and `current:previous` only where it
+changed — observed on one project at last verification. Read naively they
+look like the value on some rows and empty on the rest. Read one unchanged
+row before using such a field as the value, and take the values themselves
+from the raw source (§3, route 4).
+
 **`crawl_depth = 9990` (numeric, in the links source) is the same value as
 `"Not linked internally"` (string, in the URL source), and it means zero
 *followed* internal inlinks** — a statement about the link graph, not a

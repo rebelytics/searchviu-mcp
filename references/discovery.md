@@ -220,6 +220,20 @@ Known endpoints:
   in §10 before naming a link to a user. Paging past the first page ⬜ —
   not yet exercised; reconcile the paged row count against the reported
   total before trusting a full pull.
+- `post_live_data_sources_id_query_data` ✅ — an ad-hoc aggregate query
+  (dimensions plus filters) on one live data source: the route to fields no
+  report exposes, such as per-URL hreflang targets on the raw `crawldata`
+  source. Observed on one project at last verification: scope `crawldata`
+  by `crawl_id`, read off the `searchviu_crawl_v2` source for the crawl
+  date; a repeated record (`crawl_href_lang_tags`) is unnested by naming
+  its subfields (`.lang_code`, `.target_url`) as **dimensions**, and a
+  filter on a nested field fails with `Unrecognized name` unless that
+  field is also a dimension; a date-typed `crawl_date` filter returned a
+  server error where `dateRange` with equal custom start and end worked.
+  It caps at 1,000 rows with no offset — page it by range subdivision
+  (§11). An over-budget response is truncated (`_truncated`,
+  `_originalRowCount`) unless `maxChars` is raised, after which it
+  overflows to a file (§12).
 - `post_widgets_id_row_details` ⬜ — vendor-described row drill-down for a
   report widget; not yet exercised.
 

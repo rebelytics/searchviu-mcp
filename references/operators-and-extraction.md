@@ -81,6 +81,12 @@ this?".
 - **Pagination via range subdivision.** With no offset parameter,
   subdivide the same ranges until every slice sits under the 1,000-row
   cap.
+- **The query-data endpoint (§3, route 4) has its own operator set** —
+  observed with `lt` and `not_in`, still no "not starts with" — and the
+  range arithmetic carries over: `lt P` with `gte P′` excludes prefix P
+  (a prefix ending in `/` gets a P′ ending in `0`, which sorts right after
+  it). **`not_in` silently drops rows whose field is NULL**: reconcile its
+  result against a grouped count before reading it as a complement.
 - **Verify the partition:** slice totals must sum exactly to an
   independently derived grand total — no gap, no overlap. An exact match
   also proves the partition complete.
