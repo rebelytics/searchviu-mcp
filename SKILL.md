@@ -1,7 +1,7 @@
 ---
 name: searchviu-mcp
 description: "Companion skill for the searchVIU MCP server (list_projects / list_reports / get_report over the searchVIU crawl data warehouse, plus its REST passthrough search_tools / invoke_api_tool). Load whenever querying searchVIU data through an MCP — sizing or counting report rows, filtering by crawl date, building prefix exclusions, paging past the row cap, or deciding whether a data class is reachable at all. Also load on mentions of totalRows, get_report, invoke_api_tool, a widget error get_report cannot read, searchVIU reports via API, the AI Monitoring global reports, or when a searchVIU report shows different numbers in the UI and through the API. Teaches the real behaviour of the report-wrapper API — the unfiltered-aggregate trap, count units, facet self-exclusion, and the range arithmetic that substitutes for missing operators."
-version: 1.4.0
+version: 1.4.1
 license: CC-BY-4.0
 metadata:
   author: Eoghan Henn and contributors

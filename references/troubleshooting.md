@@ -68,6 +68,12 @@ hand the user the release URL from `mcpAccessHint` (the gate is an admin
 action inside the platform UI, which nothing in this MCP can perform), and
 resume once they confirm. Do not spend retries, tool-list refreshes or a
 new task on it — none of those touch a setting on the project.
+While a project stays unreleased the platform UI is the remaining route.
+Its URL-history compare renders in a Monaco diff editor whose DOM is
+virtualised: read the two editor models, and batch many URLs through
+hidden same-origin frames, rather than scraping the rendered lines
+(`conversation-defaults`, browser-automation reference, "A Monaco diff
+viewer").
 
 **A release carries a second, finer gate that produces no error at all.**
 The same settings page holds a "Performance data" level — Off, Levels
